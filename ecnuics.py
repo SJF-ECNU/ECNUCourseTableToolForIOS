@@ -269,27 +269,27 @@ def main():
     """主函数，处理输入参数并执行课表转换流程"""
     script_dir = get_script_dir()
     
-    html_file = input("请输入HTML文件路径 (默认为当前目录下的courseTable.html): ").strip() or "courseTableForStd!courseTable.action.html"
-    
-    if not os.path.isabs(html_file):
-        html_file = os.path.join(script_dir, html_file)
-    
-    if not os.path.exists(html_file):
-        print(f"错误: 文件不存在: {html_file}")
-        return
-    
-    date_input = input("请输入学期开始日期 (格式: YYYY-MM-DD，默认为2025-02-17): ").strip() or "2025-02-17"
     try:
-        semester_start = datetime.strptime(date_input, "%Y-%m-%d")
-    except ValueError:
-        print("日期格式错误，使用默认日期：2025-02-17")
-        semester_start = datetime(2025, 2, 17)
-    
-    output_file = input("请输入输出文件名称 (默认为 ecnu_course.ics): ").strip() or "ecnu_course.ics"
-    if not os.path.isabs(output_file):
-        output_file = os.path.join(script_dir, output_file)
-    
-    try:
+        html_file = input("请输入HTML文件路径 (默认为当前目录下的courseTable.html): ").strip() or "courseTableForStd!courseTable.action.html"
+        
+        if not os.path.isabs(html_file):
+            html_file = os.path.join(script_dir, html_file)
+        
+        if not os.path.exists(html_file):
+            print(f"错误: 文件不存在: {html_file}")
+            return
+        
+        date_input = input("请输入学期开始日期 (格式: YYYY-MM-DD，默认为2025-02-17): ").strip() or "2025-02-17"
+        try:
+            semester_start = datetime.strptime(date_input, "%Y-%m-%d")
+        except ValueError:
+            print("日期格式错误，使用默认日期：2025-02-17")
+            semester_start = datetime(2025, 2, 17)
+        
+        output_file = input("请输入输出文件名称 (默认为 ecnu_course.ics): ").strip() or "ecnu_course.ics"
+        if not os.path.isabs(output_file):
+            output_file = os.path.join(script_dir, output_file)
+        
         html_content = read_html_file(html_file)
         courses = parse_course_table(html_content)
         
@@ -304,26 +304,36 @@ def main():
         generate_ics(courses, semester_start, output_file)
         print(f"课表已成功导出到 {output_file}")
         
-        share_option = input("是否创建二维码以便手机扫码下载? (y/n): ").strip().lower()
-        if share_option == 'y':
-            file_dir = os.path.dirname(os.path.abspath(output_file))
-            file_name = os.path.basename(output_file)
+        try:
+            share_option = input("是否创建二维码以便手机扫码下载? (y/n): ").strip().lower()
+            if share_option == 'y':
+                file_dir = os.path.dirname(os.path.abspath(output_file))
+                file_name = os.path.basename(output_file)
+                
+                port = 8000
+                server = start_http_server(file_dir, port)
+                
+                local_ip = get_local_ip()
+                
+                url = f"http://{local_ip}:{port}/{file_name}"
+                qrcode_file = os.path.join(file_dir, "ecnu_course_qrcode.png")
+                generate_qrcode(url, qrcode_file)
+                
+                print(f"\n请用手机扫描二维码下载课表，或访问以下地址:")
+                print(f"{url}")
+                print("\n按Enter键退出服务器...")
+                try:
+                    input()
+                except (EOFError, KeyboardInterrupt):
+                    pass
+                finally:
+                    server.shutdown()
+                    print("\n服务器已关闭，程序退出")
+        except (EOFError, KeyboardInterrupt):
+            print("\n程序已退出")
             
-            port = 8000
-            server = start_http_server(file_dir, port)
-            
-            local_ip = get_local_ip()
-            
-            url = f"http://{local_ip}:{port}/{file_name}"
-            qrcode_file = os.path.join(file_dir, "ecnu_course_qrcode.png")
-            generate_qrcode(url, qrcode_file)
-            
-            print(f"\n请用手机扫描二维码下载课表，或访问以下地址:")
-            print(f"{url}")
-            print("\n按Enter键退出服务器...")
-            input()
-            server.shutdown()
-            
+    except (EOFError, KeyboardInterrupt):
+        print("\n程序已退出")
     except Exception as e:
         print(f"发生错误: {e}")
 
