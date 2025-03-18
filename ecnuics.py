@@ -9,6 +9,7 @@ import socket
 import threading
 import http.server
 import socketserver
+import sys
 
 def read_html_file(file_path):
     """读取HTML文件"""
@@ -255,9 +256,18 @@ def generate_qrcode(url, output_file='qrcode.png'):
     except Exception:
         pass
     
+def get_script_dir():
+    """获取程序运行目录"""
+    if getattr(sys, 'frozen', False):
+        # 如果是打包后的可执行文件
+        return os.path.dirname(sys.executable)
+    else:
+        # 如果是Python脚本
+        return os.path.dirname(os.path.abspath(__file__))
+
 def main():
     """主函数，处理输入参数并执行课表转换流程"""
-    script_dir = os.path.dirname(os.path.abspath(__file__))
+    script_dir = get_script_dir()
     
     html_file = input("请输入HTML文件路径 (默认为当前目录下的courseTable.html): ").strip() or "courseTableForStd!courseTable.action.html"
     
